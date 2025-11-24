@@ -23,7 +23,7 @@ void separar_linhas(char *linha, char *args[]) {
 void fazer_mkdir(char *args[]) {
 
     if(args[1] == NULL) {
-        printf("mkdir? faltando operando\n");
+        printf("mkdir: faltando operando\n");
         return;
     }
 
@@ -38,7 +38,7 @@ void fazer_mkdir(char *args[]) {
 void fazer_cd(char *args[]) {
 
     if(args[1] == NULL) {
-        printf("cd - faltando argumento");
+        printf("cd: faltando argumento");
         return;
     }
 
@@ -61,7 +61,7 @@ void fazer_pwd(char *args[]) {
 
 }
 
-void fazer_ls(char *args) {
+void fazer_ls(char *args[]) {
     struct dirent *entrada;
     DIR *diretorio;
 
@@ -73,11 +73,18 @@ void fazer_ls(char *args) {
         perror("ls");
         return;
     }
+
+    while((entrada = readdir(diretorio)) != NULL) {
+        printf("%s", entrada->d_name);
+    }
+    printf("\n");
+
+    closedir(diretorio);
 }
 
-void fazer_rm(char *args) {
+void fazer_rm(char *args[]) {
     if(args[1] == NULL) {
-        printf("rm? faltando operaando\n");
+        printf("rm: faltando operaando\n");
         return;
     }
 

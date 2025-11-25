@@ -79,12 +79,14 @@ void fazer_pwd(char *args[]) {
 void fazer_ls(char *args[]) {
     struct dirent *entrada;
     DIR *diretorio;
-    const char *caminho = ".";
+    const char *caminho = "."; 
 
     if(args[1] != NULL) {
         if(args[1][0] == '-') {
             if(args[2] != NULL) {
                 caminho = args[2];
+            } else {
+                caminho = "."; 
             }
         } else {
             caminho = args[1];

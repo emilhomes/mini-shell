@@ -47,14 +47,19 @@ void fazer_mkdir(char *args[]) {
 
 void fazer_cd(char *args[]) {
 
+    char *caminho;
+
     if(args[1] == NULL) {
-        printf("cd: faltando argumento");
-        return;
+        caminho = getenv("HOME");
+        if(caminho == NULL) {
+            printf("cd: impossivel encontrar diretorio home\n");
+            return;
+        }
+    } else {
+        caminho = args[1];
     }
 
-    int result = chdir(args[1]);
-
-    if(result != 0) {
+    if(chdir(caminho) != 0) {
         perror("cd");
     }
 }
@@ -74,8 +79,17 @@ void fazer_pwd(char *args[]) {
 void fazer_ls(char *args[]) {
     struct dirent *entrada;
     DIR *diretorio;
+    const char *caminho = ".";
 
-    const char *caminho = (args[1] == NULL) ?  "." : args[1];
+    if(args[1] != NULL) {
+        if(args[1][0] == '-') {
+            if(args[2] != NULL) {
+                caminho = args[2];
+            }
+        } else {
+            caminho = args[1];
+        }
+    }
 
     diretorio = opendir(caminho);
 
@@ -85,10 +99,8 @@ void fazer_ls(char *args[]) {
     }
 
     while((entrada = readdir(diretorio)) != NULL) {
-        printf("%s", entrada->d_name);
-        printf("\n");
+        printf("%s\n", entrada->d_name);
     }
-    printf("\n");
 
     closedir(diretorio);
 }

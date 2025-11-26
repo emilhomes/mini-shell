@@ -78,35 +78,99 @@ void fazer_pwd(char *args[]) {
 
 }
 
-void fazer_ls(char *args[]) {
-    struct dirent *entrada;
-    DIR *diretorio;
-    const char *caminho = "."; 
+void imprimir_permissoes(mode_t modo) {
+    printf( (S_ISDIR(modo)) ? "d" : "-");
+    printf( (modo & S_IRUSR) ? "r" : "-");
+    printf( (modo & S_IWUSR) ? "w" : "-");
+    printf( (modo & S_IXUSR) ? "x" : "-");
+    printf( (modo & S_IRGRP) ? "r" : "-");
+    printf( (modo & S_IWGRP) ? "w" : "-");
+    printf( (modo & S_IXGRP) ? "x" : "-");
+    printf( (modo & S_IROTH) ? "r" : "-");
+    printf( (modo & S_IWOTH) ? "w" : "-");
+    printf( (modo & S_IXOTH) ? "x" : "-");
+}
 
-    if(args[1] != NULL) {
-        if(args[1][0] == '-') {
-            if(args[2] != NULL) {
-                caminho = args[2];
-            } else {
-                caminho = "."; 
-            }
-        } else {
-            caminho = args[1];
+void fazer_ls(char **argumentos) {
+    char *caminho_diretorio = ".";
+    int mostrar_ocultos = 0;  // flag -a
+    int mostrar_detalhes = 0; // flag -l
+    
+    // Verifica se o usuário digitou -a, -l, -la...
+    for (int k = 1; argumentos[k] != NULL; k++) {
+        if (strcmp(argumentos[k], "-a") == 0) {
+	  mostrar_ocultos = 1;
+	} else if (strcmp(argumentos[k], "-l") == 0) {
+		mostrar_detalhes = 1;
+	} else if (strcmp(argumentos[k], "-la") == 0 || strcmp(argumentos[k], "-al") == 0) {
+            mostrar_ocultos = 1; 
+            mostrar_detalhes = 1;
+        } else if (argumentos[k][0] != '-') {
+            caminho_diretorio = argumentos[k];
         }
     }
 
-    diretorio = opendir(caminho);
+    DIR *fluxo_diretorio;
+    struct dirent *entrada;
+    struct stat info_arquivo;
 
-    if(diretorio == NULL) {
+    // Abre o diretório para leitura 
+    fluxo_diretorio = opendir(caminho_diretorio);
+    if (!fluxo_diretorio) {
         perror("ls");
         return;
     }
 
-    while((entrada = readdir(diretorio)) != NULL) {
-        printf("%s\n", entrada->d_name);
-    }
+    // Lê cada entrada (arquivo/pasta) do diretório 
+    while ((entrada = readdir(fluxo_diretorio)) != NULL) {
+        
+        // Tratamento flag -a: pular ocultos (que começam com ponto) se não for -a
+        if (!mostrar_ocultos && entrada->d_name[0] == '.') {
+		 continue;
+	}
 
-    closedir(diretorio);
+        if (mostrar_detalhes) {
+            char caminho_completo[1024];
+            snprintf(caminho_completo, sizeof(caminho_completo), "%s/%s", caminho_diretorio, entrada->d_name);
+
+            // Obtém informações detalhadas do arquivo
+            if (stat(caminho_completo, &info_arquivo) < 0) {
+                perror("ls stat");
+                continue;
+            }
+
+            //Imprimir Permissões
+            imprimir_permissoes(info_arquivo.st_mode);
+            printf(" %ld", (long)info_arquivo.st_nlink);
+
+            // Obter Nome do Usuário e Grupo
+            struct passwd *dados_usuario = getpwuid(info_arquivo.st_uid);
+            struct group  *dados_grupo = getgrgid(info_arquivo.st_gid);
+            
+            printf(" %s %s", 
+                dados_usuario ? dados_usuario->pw_name : "desconhecido", 
+                dados_grupo ? dados_grupo->gr_name : "desconhecido");
+
+            // Tamanho do arquivo
+            printf(" %5ld", (long)info_arquivo.st_size);
+
+            // Formatar Data de Modificação 
+            char data_formatada[80];
+            struct tm *info_tempo = localtime(&info_arquivo.st_mtime);
+            strftime(data_formatada, sizeof(data_formatada), "%b %d %H:%M", info_tempo);
+            printf(" %s %s\n", data_formatada, entrada->d_name);
+
+        } else {
+            printf("%s  ", entrada->d_name);
+        }
+    }
+    
+    if (!mostrar_detalhes) {
+	 printf("\n");
+	}
+
+    // Fecha o fluxo do diretório
+    closedir(fluxo_diretorio);
 }
 
 void fazer_rm(char *args[]) {

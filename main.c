@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <grp.h>
+#include <time.h>
 #include <fcntl.h> //Necessario para open()
 #define TAM_BUFFER 4096 //Tamanho do buffer para leitura
 #define TAM_BUFFER_CP 4096 //Tamanho do buffer para cópia

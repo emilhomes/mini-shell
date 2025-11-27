@@ -8,6 +8,7 @@
 #include <dirent.h>
 #include <grp.h>
 #include <time.h>
+#include <pwd.h> //Para a struct passwd e a função getpwuid()
 #include <fcntl.h> //Necessario para open()
 #define TAM_BUFFER 4096 //Tamanho do buffer para leitura
 #define TAM_BUFFER_CP 4096 //Tamanho do buffer para cópia
@@ -17,6 +18,7 @@
 #define MAX_LINE_LEN 256
 #define TAM_BUFFER_SORT (MAX_LINES * MAX_LINE_LEN)
 
+//Função para separar as linhas do comando recebido pelo usuario no shell
 void separar_linhas(char *linha, char *args[]) {
 
     char *token = strtok(linha, " \t\n");
@@ -32,6 +34,7 @@ void separar_linhas(char *linha, char *args[]) {
     args[i] = NULL;
 }
 
+//Comando MKDIR
 void fazer_mkdir(char *args[]) {
 
     if(args[1] == NULL) {
@@ -47,6 +50,7 @@ void fazer_mkdir(char *args[]) {
 
 }
 
+//Comando CD
 void fazer_cd(char *args[]) {
 
     char *caminho;
@@ -57,7 +61,7 @@ void fazer_cd(char *args[]) {
             printf("cd: impossivel encontrar diretorio home\n");
             return;
         }
-    } else {
+    } else {    
         caminho = args[1];
     }
 
@@ -66,6 +70,7 @@ void fazer_cd(char *args[]) {
     }
 }
 
+//Comando PWD
 void fazer_pwd(char *args[]) {
     
     char diretorio[1024];
@@ -91,22 +96,24 @@ void imprimir_permissoes(mode_t modo) {
     printf( (modo & S_IXOTH) ? "x" : "-");
 }
 
+
+//Comando LS
 void fazer_ls(char **argumentos) {
     char *caminho_diretorio = ".";
     int mostrar_ocultos = 0;  // flag -a
     int mostrar_detalhes = 0; // flag -l
     
     // Verifica se o usuário digitou -a, -l, -la...
-    for (int k = 1; argumentos[k] != NULL; k++) {
-        if (strcmp(argumentos[k], "-a") == 0) {
-	  mostrar_ocultos = 1;
-	} else if (strcmp(argumentos[k], "-l") == 0) {
-		mostrar_detalhes = 1;
-	} else if (strcmp(argumentos[k], "-la") == 0 || strcmp(argumentos[k], "-al") == 0) {
+    for (int i = 1; argumentos[i] != NULL; i++) {
+        if (strcmp(argumentos[i], "-a") == 0) {
+	        mostrar_ocultos = 1;
+	    } else if (strcmp(argumentos[i], "-l") == 0) {
+		    mostrar_detalhes = 1;
+	    } else if (strcmp(argumentos[i], "-la") == 0 || strcmp(argumentos[i], "-al") == 0) {
             mostrar_ocultos = 1; 
             mostrar_detalhes = 1;
-        } else if (argumentos[k][0] != '-') {
-            caminho_diretorio = argumentos[k];
+        } else if (argumentos[i][0] != '-') {
+            caminho_diretorio = argumentos[i];
         }
     }
 
@@ -173,6 +180,7 @@ void fazer_ls(char **argumentos) {
     closedir(fluxo_diretorio);
 }
 
+//Comando RM
 void fazer_rm(char *args[]) {
     if(args[1] == NULL) {
         printf("rm: faltando operaando\n");
@@ -187,6 +195,7 @@ void fazer_rm(char *args[]) {
 
 }
 
+//Comando MV
 void fazer_mv(char *args[]) {
 
     //precisa de origem e destino
@@ -202,6 +211,7 @@ void fazer_mv(char *args[]) {
     }
 }
 
+//Comando RMDIR
 void fazer_rmdir(char *args[]) {
     if (args[1] == NULL) {
         printf("rmdir: faltando operando\n");
@@ -215,6 +225,7 @@ void fazer_rmdir(char *args[]) {
     }
 }
 
+//Comando CAT
 void fazer_cat(char *args[]) {
     if (args[1] == NULL) {
         printf("cat: faltando operando\n");
@@ -249,8 +260,10 @@ void fazer_cat(char *args[]) {
     // Fechar o arquivo
     close(fd);
 }
- 
+
+//Comando CP
 void fazer_cp(char *args[]) {
+    //Verficar a falta de operandos
     if (args[1] == NULL || args[2] == NULL) {
         printf("cp: faltando operando arquivo de origem ou destino\n");
         return;
@@ -262,6 +275,7 @@ void fazer_cp(char *args[]) {
 
     // Abrir o arquivo de origem para leitura
     fd_origem = open(args[1], O_RDONLY);
+    //Verificação para saber se deu certo abrir o arquivo de origem para leitura (O_RDONLY)
     if (fd_origem == -1) {
         perror("cp: origem");
         return;
@@ -269,6 +283,7 @@ void fazer_cp(char *args[]) {
 
     // Abrir o arquivo de destino para escrita.
     fd_destino = open(args[2], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    //Verificação para saber se deu certo abrir o arquivo de destino para escrita
     if (fd_destino == -1) {
         perror("cp: destino");
         close(fd_origem);
@@ -297,10 +312,10 @@ void fazer_cp(char *args[]) {
 
 // Função de comparação para qsort (ordem alfabética)
 int comparar_linhas(const void *a, const void *b) {
-
     return strcmp(*(const char **)a, *(const char **)b);
 }
 
+//Comando SORT
 void fazer_sort(char *args[]) {
     if (args[1] == NULL) {
         printf("sort: faltando operando\n");
@@ -325,6 +340,7 @@ void fazer_sort(char *args[]) {
 
     // 1. Abrir o arquivo para leitura
     fd = open(args[1], O_RDONLY);
+    //Verificação para saber se deu certo abrir o arquivo para fazer a leitura dos dados
     if (fd == -1) {
         perror("sort");
         free(buffer_total);
@@ -334,6 +350,7 @@ void fazer_sort(char *args[]) {
     bytes_lidos = read(fd, buffer_total, TAM_BUFFER_SORT - 1);
     close(fd);
 
+    //Verificação de leitura
     if (bytes_lidos == -1) {
         perror("sort: erro ao ler");
         free(buffer_total);
@@ -371,6 +388,7 @@ void fazer_sort(char *args[]) {
     free(buffer_total);
 }
 
+//Comando GREP
 void fazer_grep(char *args[]) {
     pid_t pid;
     int status;
@@ -383,9 +401,8 @@ void fazer_grep(char *args[]) {
         perror("fork");
         return;
     }
-
+    // Processo filho
     if (pid == 0) {
-        // Processo filho
         
         // O caminho completo para o executável do grep
         const char *caminho_grep = "/bin/grep";
@@ -396,7 +413,7 @@ void fazer_grep(char *args[]) {
             // Se falhar, o processo filho deve terminar
             exit(EXIT_FAILURE);
         }
-    } else {
+        } else {
         
         if (waitpid(pid, &status, 0) == -1) {
             perror("waitpid");
